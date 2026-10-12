@@ -86,7 +86,7 @@
   .total.alone div { border-top: 1px solid var(--line); margin-top: -1px; }
   .total span { padding: 0 12px; height: 32px; line-height: 32px; }
   .total span + span { border-left: 1px solid var(--line); min-width: 8em; text-align: right; }
-  .sign { display: none; }
+  .printonly { display: none; }
   .hint { color: var(--muted); font-size: 13px; margin-top: 12px; }
 
   .hist { margin-top: 24px; }
@@ -124,22 +124,33 @@
   }
 
   @media print {
-    @page { size: A4 portrait; margin: 12mm; }
-    body { background: #fff; }
+    @page { size: A4 portrait; margin: 14mm 15mm; }
+    body { background: #fff; color: #000; font-size: 11pt; line-height: 1.45; }
     .wrap { max-width: none; padding: 0; }
-    .toolbar, .adders, .hint, td.d, .banner, .hist { display: none !important; }
-    .sheet { border: 0; padding: 0; overflow: visible; }
-    .cols, .one-col, .sheet-title, .total { min-width: 0; }
-    .t2 td.n { width: 62%; } .t2 td.a { width: 38%; }
-    .t4 td.n { width: 41%; } .t4 td.t4p { width: 20%; } .t4 td.t4q { width: 14%; } .t4 td.t4t { width: 25%; }
-    td, th { height: 7.5mm; font-size: 12pt; }
-    td input { height: auto; color: inherit; }
-    tr { break-inside: avoid; }
-    .cols { grid-template-columns: 1fr 1fr; gap: 0; }
-    tr.pad { display: table-row; }
-    .sign { display: flex; align-items: flex-end; justify-content: flex-end; gap: 10px; margin-top: 12mm; break-inside: avoid; }
-    .sign span { font-size: 12pt; }
-    .sign .box { width: 62mm; height: 16mm; border-bottom: 1px solid var(--line); }
+    .toolbar, .adders, .hint, .banner, .hist, .backup, .home, .sheet { display: none !important; }
+    .printonly { display: block; }
+    .ph { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 14px; }
+    .pt { font-size: 20pt; font-weight: 700; }
+    .pm { font-size: 10pt; color: #444; }
+    .ps { margin-bottom: 16px; break-inside: auto; }
+    .ps h3 { font-size: 13pt; margin: 0 0 4px; }
+    .pl { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .pl th, .pl td { border: 0; border-bottom: 0.5pt solid #999; height: auto; padding: 4px 6px; font-size: 11pt; text-align: left; vertical-align: top; }
+    .pl th { border-bottom: 1.2pt solid #000; font-weight: 700; font-size: 10pt; color: #333; }
+    .pl .r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .pl .dt { color: #444; font-size: 10pt; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+    .pl tfoot td { border-bottom: 0; border-top: 1.2pt solid #000; font-weight: 700; }
+    .pl thead { display: table-header-group; }
+    .pl tr { break-inside: avoid; }
+    .pl .none { color: #777; }
+    .psum { margin-left: auto; width: 62mm; border-collapse: collapse; margin-top: 4px; }
+    .psum td { border: 0; height: auto; padding: 3px 6px; font-size: 11pt; }
+    .psum td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+    .psum tr.g td { border-top: 1.5pt solid #000; font-size: 13pt; font-weight: 700; padding-top: 5px; }
+    .psign { display: flex; justify-content: flex-end; gap: 14mm; margin-top: 16mm; break-inside: avoid; }
+    .psign div { display: flex; align-items: flex-end; gap: 8px; }
+    .psign i { display: block; width: 52mm; height: 14mm; border-bottom: 1pt solid #000; }
+    .psign div:last-child i { width: 34mm; }
   }
 </style>
 </head>
@@ -193,7 +204,7 @@
         <b>無發票</b>
         <div class="chips" id="chipsNo"></div>
         <div class="row">
-          <input class="name" id="nameNo" list="listNames" placeholder="項目(如 餐費)" autocomplete="off">
+          <input class="name" id="nameNo" placeholder="項目(如 餐費)" autocomplete="off">
           <input class="amt" id="amtNo" type="number" inputmode="decimal" placeholder="金額">
           <button class="btn" type="button" data-add="no">加入</button>
         </div>
@@ -202,12 +213,11 @@
         <b>有發票</b>
         <div class="chips" id="chipsInv"></div>
         <div class="row">
-          <input class="name" id="nameInv" list="listNames" placeholder="項目(如 加油)" autocomplete="off">
+          <input class="name" id="nameInv" placeholder="項目(如 加油)" autocomplete="off">
           <input class="amt" id="amtInv" type="number" inputmode="decimal" placeholder="金額">
           <button class="btn" type="button" data-add="inv">加入</button>
         </div>
       </div>
-      <datalist id="listNames"></datalist>
     </div>
 
     <div class="sheet">
@@ -217,8 +227,8 @@
         <table class="t2" id="tblInv"></table>
       </div>
       <div class="total"><div><span>合計</span><span id="grand">0</span></div></div>
-      <div class="sign"><span>簽名</span><div class="box"></div></div>
     </div>
+    <div class="printonly" id="printQh"></div>
     <p class="hint">資料自動存在這個瀏覽器裡。同名項目會自動排在一起。點表格內的文字或金額可以直接修改,按右邊 × 刪除一筆。</p>
   </section>
 
@@ -243,12 +253,11 @@
     <div class="adders one" id="qxAdder">
       <div class="adder">
         <div class="row">
-          <input class="name" id="nameQx" list="listQx" placeholder="品名" autocomplete="off">
+          <input class="name" id="nameQx" placeholder="品名" autocomplete="off">
           <input class="amt" id="priceQx" type="number" inputmode="decimal" placeholder="單價">
           <input class="qty" id="qtyQx" type="number" inputmode="decimal" placeholder="數量" value="1">
           <button class="btn" type="button" data-add="qx">加入</button>
         </div>
-        <datalist id="listQx"></datalist>
       </div>
     </div>
 
@@ -257,6 +266,7 @@
       <div class="one-col"><table class="t4" id="tblQx"></table></div>
       <div class="total alone"><div><span>合計</span><span id="qxGrand">0</span></div></div>
     </div>
+    <div class="printonly" id="printQx"></div>
     <p class="hint" id="qxHint">全部付清後按「已結清」,這一份會收進下方紀錄,並換成新的一份。</p>
 
     <div class="hist" id="hist">
@@ -304,6 +314,59 @@
   }
   function monthNum(m) { return parseInt(m.split("-")[1], 10); }
   function dateStr(d) { return d.getFullYear() + "/" + (d.getMonth() + 1) + "/" + d.getDate(); }
+
+  /* ---------- 列印清單 ---------- */
+  function groupList(list) {
+    var order = [], map = {};
+    list.forEach(function (r) {
+      var n = String(r.name || "").trim();
+      if (!n && (r.amt === "" || r.amt == null)) return;
+      if (!n) n = "(未命名)";
+      if (!map[n]) { map[n] = { name: n, items: [], sum: 0 }; order.push(map[n]); }
+      var a = num(r.amt); map[n].items.push(a); map[n].sum += a;
+    });
+    return order;
+  }
+  function section(title, list) {
+    var g = groupList(list), total = 0, h = '<section class="ps"><h3>' + title + '</h3><table class="pl"><colgroup><col style="width:26%"><col><col style="width:22%"></colgroup>' +
+      '<thead><tr><th>項目</th><th>明細</th><th class="r">小計</th></tr></thead><tbody>';
+    if (!g.length) h += '<tr><td class="none" colspan="3">(沒有項目)</td></tr>';
+    g.forEach(function (x) {
+      total += x.sum;
+      h += '<tr><td>' + esc(x.name) + '</td><td class="dt">' + (x.items.length > 1 ? x.items.map(fmt).join(" + ") : "") + '</td><td class="r">' + fmt(x.sum) + '</td></tr>';
+    });
+    h += '</tbody><tfoot><tr><td colspan="2">' + title + ' 小計</td><td class="r">' + fmt(total) + '</td></tr></tfoot></table></section>';
+    return { html: h, total: total };
+  }
+  function signHTML() { return '<div class="psign"><div><span>簽名</span><i></i></div><div><span>日期</span><i></i></div></div>'; }
+
+  function buildPrint() {
+    if (view === "qh") {
+      var m = state.qh.month, d = monthData(m);
+      var a = section("無發票", d.no), b = section("有發票", d.inv);
+      $("printQh").innerHTML = '<div class="ph"><div class="pt">' + monthNum(m) + '月零用金</div><div class="pm">啟恒 · 列印日期 ' + dateStr(new Date()) + '</div></div>' +
+        a.html + b.html +
+        '<table class="psum"><tr><td>無發票小計</td><td>' + fmt(a.total) + '</td></tr><tr><td>有發票小計</td><td>' + fmt(b.total) + '</td></tr><tr class="g"><td>合計</td><td>' + fmt(a.total + b.total) + '</td></tr></table>' + signHTML();
+    }
+    if (view === "qx") {
+      var rows = qxRows(), order = [], map = {};
+      rows.forEach(function (r) {
+        var n = String(r.name || "").trim() || "(未命名)";
+        if (!map[n]) { map[n] = []; order.push(n); }
+        map[n].push(r);
+      });
+      var h = '<table class="pl"><colgroup><col><col style="width:20%"><col style="width:14%"><col style="width:24%"></colgroup><thead><tr><th>品名</th><th class="r">單價</th><th class="r">數量</th><th class="r">總價</th></tr></thead><tbody>';
+      if (!rows.length) h += '<tr><td class="none" colspan="4">(沒有項目)</td></tr>';
+      order.forEach(function (n) {
+        map[n].forEach(function (r) {
+          h += '<tr><td>' + esc(n) + '</td><td class="r">' + fmt(num(r.price)) + '</td><td class="r">' + fmt(num(r.qty)) + '</td><td class="r">' + fmt(num(r.price) * num(r.qty)) + '</td></tr>';
+        });
+      });
+      h += '</tbody><tfoot><tr><td colspan="3">合計</td><td class="r">' + fmt(sumQx(rows)) + '</td></tr></tfoot></table>';
+      var title = qxView === null ? "強興(第 " + state.qx.serial + " 份)" : "強興(第 " + state.qx.history[qxView].serial + " 份,已結清)";
+      $("printQx").innerHTML = '<div class="ph"><div class="pt">' + title + '</div><div class="pm">列印日期 ' + dateStr(new Date()) + '</div></div>' + h + signHTML();
+    }
+  }
 
   /* ---------- 切換畫面 ---------- */
   function go(v) {
@@ -367,7 +430,6 @@
     $("tblNo").innerHTML = tableHTML("no", "無發票", d.no, rows);
     $("tblInv").innerHTML = tableHTML("inv", "有發票", d.inv, rows);
     qhTotals();
-    $("listNames").innerHTML = allNames().map(function (n) { return '<option value="' + esc(n) + '">'; }).join("");
     var chips = DEFAULTS.map(function (n) { return n; });
     ["No", "Inv"].forEach(function (cap) {
       var side = cap === "No" ? "no" : "inv";
@@ -439,12 +501,6 @@
     $("qxHint").hidden = ro;
     $("settle").disabled = state.qx.rows.length === 0;
 
-    var names = {}, list = [];
-    state.qx.rows.concat.apply(state.qx.rows, state.qx.history.map(function (x) { return x.rows; })).forEach(function (r) {
-      if (r.name && !names[r.name]) { names[r.name] = 1; list.push(r.name); }
-    });
-    $("listQx").innerHTML = list.map(function (n) { return '<option value="' + esc(n) + '">'; }).join("");
-
     var hist = state.qx.history;
     $("histList").innerHTML = hist.length ? hist.map(function (x, i) {
       return '<li><span>第 ' + x.serial + ' 份 · ' + esc(x.closedAt) + ' 結清 · ' + x.rows.length + ' 筆 · 合計 ' + fmt(x.total) + '</span>' +
@@ -466,7 +522,10 @@
     if (qty === "") qty = "1";
     if (!name) { $("nameQx").focus(); return; }
     if (price === "" || isNaN(parseFloat(price))) { $("priceQx").focus(); return; }
-    state.qx.rows.push({ name: name, price: price, qty: qty });
+    var rs = state.qx.rows, at = -1;
+    for (var k = 0; k < rs.length; k++) if (rs[k].name === name) at = k;
+    var rec = { name: name, price: price, qty: qty };
+    if (at >= 0) rs.splice(at + 1, 0, rec); else rs.push(rec);
     $("nameQx").value = ""; $("priceQx").value = ""; $("qtyQx").value = "1";
     save(); render();
     $("nameQx").focus();
@@ -495,6 +554,7 @@
     if (view === "home") renderHome();
     if (view === "qh") renderQH();
     if (view === "qx") renderQX();
+    buildPrint();
   }
 
   /* ---------- 事件 ---------- */
@@ -530,8 +590,8 @@
     var t = e.target, tr = t.closest("tr");
     if (!tr || tr.dataset.i === undefined || !t.dataset.f) return;
     var id = t.closest("table").id, i = parseInt(tr.dataset.i, 10);
-    if (id === "tblQx") { state.qx.rows[i][t.dataset.f] = t.value; save(); qxTotals(); }
-    else { monthData(state.qh.month, true)[id === "tblNo" ? "no" : "inv"][i][t.dataset.f] = t.value; save(); qhTotals(); }
+    if (id === "tblQx") { state.qx.rows[i][t.dataset.f] = t.value; save(); qxTotals(); buildPrint(); }
+    else { monthData(state.qh.month, true)[id === "tblNo" ? "no" : "inv"][i][t.dataset.f] = t.value; save(); qhTotals(); buildPrint(); }
   });
 
   $("month").addEventListener("change", function (e) { state.qh.month = e.target.value || defMonth; save(); render(); });
